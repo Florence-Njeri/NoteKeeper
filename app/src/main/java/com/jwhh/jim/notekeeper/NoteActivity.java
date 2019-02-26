@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
@@ -14,6 +15,7 @@ import java.util.List;
 
 public class NoteActivity extends AppCompatActivity {
     public static final String NOTE_POSITION = "com.jwhh.jim.notekeeper.NOTE_POSITION";
+    private  final String TAG = getClass().getSimpleName();
     public static final String ORIGINAL_NOTE_COURSE_ID = "com.jwhh.jim.notekeeper.ORIGINAL_NOTE_COURSE_ID";
     public static final String ORIGINAL_NOTE_TITLE = "com.jwhh.jim.notekeeper.ORIGINAL_NOTE_TITLE";
     public static final String ORIGINAL_NOTE_TEXT = "com.jwhh.jim.notekeeper.ORIGINAL_NOTE_TEXT";
@@ -47,8 +49,10 @@ public class NoteActivity extends AppCompatActivity {
         readDisplayStateValues();
         //Making data persistent<Doesn't change>
         if(savedInstanceState == null) {
+            //When the activity is being newly created ie opening note from list first time
             saveOriginalNoteValues();
         } else {
+            //For an existing activity <being recreated> ie left noteActivity to email
             restoreOriginalNoteValues(savedInstanceState);
         }
 
@@ -57,8 +61,10 @@ public class NoteActivity extends AppCompatActivity {
 
         if(!mIsNewNote)
             displayNote(mSpinnerCourses, mTextNoteTitle, mTextNoteText);
+        Log.d(TAG,"onCreate" );
     }
-
+//Restore the original note value ,values before user left activity>
+// from the savedInstance state when user resumes activity
     private void restoreOriginalNoteValues(Bundle savedInstanceState) {
         mOriginalNoteCourseId = savedInstanceState.getString(ORIGINAL_NOTE_COURSE_ID);
         mOriginalNoteTitle = savedInstanceState.getString(ORIGINAL_NOTE_TITLE);
@@ -81,6 +87,8 @@ public class NoteActivity extends AppCompatActivity {
         super.onPause();
         //Handle user cancellation
         if(mIsCancelling) {
+            Log.i(TAG," Cancelling note at position" + mNotePosition);
+
             if(mIsNewNote) {
                 DataManager.getInstance().removeNote(mNotePosition);
             }
@@ -94,6 +102,8 @@ public class NoteActivity extends AppCompatActivity {
         else {
             saveNote();
         }
+        Log.d(TAG,"onPause" );
+
     }
 //TODO: Discard any changes made to the existing note if user is cancelling
     private void storePreviousNoteValues() {
@@ -129,20 +139,20 @@ TODO:read the content of the selected note from list passed from intent extras
  */
     private void readDisplayStateValues() {
         Intent intent = getIntent();
-        int position = intent.getIntExtra(NOTE_POSITION, POSITION_NOT_SET);
-        mIsNewNote = position == POSITION_NOT_SET;
+        mNotePosition = intent.getIntExtra(NOTE_POSITION, POSITION_NOT_SET);
+        mIsNewNote = mNotePosition== POSITION_NOT_SET;
         if(mIsNewNote) {
             createNewNote();
-        } else {
-            //Get position of the item selected
-            mNote = DataManager.getInstance().getNotes().get(position);
         }
+            //Get position of the item selected
+            mNote = DataManager.getInstance().getNotes().get(mNotePosition);
+
     }
 //TODO: Handle the creation of a new note
     private void createNewNote() {
         DataManager dm = DataManager.getInstance();
         mNotePosition = dm.createNewNote();
-        mNote = dm.getNotes().get(mNotePosition);//Get the position off the new note in the array
+//        mNote = dm.getNotes().get(mNotePosition);//Get the position off the new note in the array
     }
 
     @Override

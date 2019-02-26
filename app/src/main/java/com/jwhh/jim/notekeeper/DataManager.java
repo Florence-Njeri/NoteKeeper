@@ -37,7 +37,8 @@ public class DataManager {
     public int createNewNote() {
         NoteInfo note = new NoteInfo(null, null, null);
         mNotes.add(note);
-        return mNotes.size() - 1;
+        //Because an array is 0 based
+        return mNotes.size() -1 ;
     }
 
     public int findNote(NoteInfo note) {
