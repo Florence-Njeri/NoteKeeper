@@ -66,7 +66,7 @@ public class NoteCreationTest {
                 closeSoftKeyboard());
 
 //Verify the expected
-        onView(withId(R.id.text_note_title )).check(matches(withText(containsString(noteText))));
+        onView(withId(R.id.text_note_title )).check(matches(withText(containsString(noteTitle))));
         onView(withId(R.id.text_note_text)).check(matches(withText(containsString(noteText))));
 
         pressBack();
