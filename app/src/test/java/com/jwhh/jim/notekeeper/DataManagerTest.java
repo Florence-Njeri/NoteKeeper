@@ -1,5 +1,8 @@
 package com.jwhh.jim.notekeeper;
 
+import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
+import com.jwhh.jim.notekeeper.DataClasses.NoteInfo;
+
 import org.junit.Test;
 
 import static org.junit.Assert.*;

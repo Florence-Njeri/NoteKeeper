@@ -10,6 +10,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import com.jwhh.jim.notekeeper.Activities.NoteListActivity;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -43,7 +45,7 @@ public class NoteListActivityTest {
     @Test
     public void noteListActivityTest() {
         DataInteraction appCompatTextView = onData(anything())
-                .inAdapterView(allOf(withId(R.id.list_notes),
+                .inAdapterView(allOf(withId(R.id.item_note),
                         childAtPosition(
                                 withClassName(is("android.support.constraint.ConstraintLayout")),
                                 0)))

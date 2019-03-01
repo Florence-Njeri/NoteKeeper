@@ -1,5 +1,9 @@
 package com.jwhh.jim.notekeeper;
 
+import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
+import com.jwhh.jim.notekeeper.DataClasses.ModuleInfo;
+import com.jwhh.jim.notekeeper.DataClasses.NoteInfo;
+
 import java.util.ArrayList;
 import java.util.List;
 

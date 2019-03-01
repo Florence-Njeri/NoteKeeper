@@ -1,4 +1,4 @@
-package com.jwhh.jim.notekeeper;
+package com.jwhh.jim.notekeeper.Activities;
 // TODO: Open the note from the list
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,6 +10,11 @@ import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
+
+import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
+import com.jwhh.jim.notekeeper.DataClasses.NoteInfo;
+import com.jwhh.jim.notekeeper.DataManager;
+import com.jwhh.jim.notekeeper.R;
 
 import java.util.List;
 

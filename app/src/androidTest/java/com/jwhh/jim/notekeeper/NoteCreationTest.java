@@ -1,8 +1,11 @@
 package com.jwhh.jim.notekeeper;
 
-import android.support.test.espresso.ViewInteraction;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
+
+import com.jwhh.jim.notekeeper.Activities.NoteListActivity;
+import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
+import com.jwhh.jim.notekeeper.DataClasses.NoteInfo;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;

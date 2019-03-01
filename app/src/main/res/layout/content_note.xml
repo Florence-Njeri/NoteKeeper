@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.jwhh.jim.notekeeper.NoteActivity"
+    tools:context="com.jwhh.jim.notekeeper.Activities.NoteActivity"
     tools:showIn="@layout/activity_note">
 
     <Spinner
@@ -29,7 +29,7 @@
         android:layout_marginRight="0dp"
         android:layout_marginTop="8dp"
         android:ems="10"
-        android:hint="Note title"
+        android:hint="@string/note_title"
         android:inputType="textMultiLine"
         app:layout_constraintLeft_toLeftOf="@+id/spinner_courses"
         app:layout_constraintRight_toRightOf="@+id/spinner_courses"
@@ -43,7 +43,7 @@
         android:layout_marginRight="0dp"
         android:layout_marginTop="8dp"
         android:ems="10"
-        android:hint="Note text"
+        android:hint="@string/note_text"
         android:inputType="textMultiLine"
         app:layout_constraintLeft_toLeftOf="@+id/text_note_title"
         app:layout_constraintRight_toRightOf="@+id/text_note_title"

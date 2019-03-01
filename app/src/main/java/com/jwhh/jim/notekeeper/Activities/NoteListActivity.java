@@ -1,4 +1,4 @@
-package com.jwhh.jim.notekeeper;
+package com.jwhh.jim.notekeeper.Activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,15 +8,16 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
-import android.widget.ListView;
+
+import com.jwhh.jim.notekeeper.Adapters.NoteRecyclerAdapter;
+import com.jwhh.jim.notekeeper.DataManager;
+import com.jwhh.jim.notekeeper.DataClasses.NoteInfo;
+import com.jwhh.jim.notekeeper.R;
 
 import java.util.List;
 
 public class NoteListActivity extends AppCompatActivity {
-
+    NoteRecyclerAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +40,7 @@ public class NoteListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-//        mAdapterNotes.notifyDataSetChanged();
+        mAdapter.notifyDataSetChanged();
     }
 
     private void initializeDisplayContent() {
@@ -47,6 +48,10 @@ public class NoteListActivity extends AppCompatActivity {
         final RecyclerView recyclerNote = (RecyclerView) findViewById(R.id.recycler_list_notes);
         LinearLayoutManager noteLayoutManager = new LinearLayoutManager(this);
         recyclerNote.setLayoutManager(noteLayoutManager);
+//Retrieve the notes to be displayed
+        List <NoteInfo> notes = DataManager.getInstance().getNotes();
+        mAdapter = new NoteRecyclerAdapter(this, notes);
+        recyclerNote.setAdapter(mAdapter);
 
     }
 
