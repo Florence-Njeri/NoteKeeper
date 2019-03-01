@@ -3,11 +3,13 @@ package com.jwhh.jim.notekeeper.Activities;
 
 import android.annotation.SuppressLint;
 import android.app.LoaderManager;
+import android.content.ContentValues;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -90,7 +92,6 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
         Log.d(TAG, "onCreate");
     }
 
-
     @Override
     protected void onDestroy() {
         mDbOpenhelper.close();
@@ -126,7 +127,8 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
             Log.i(TAG, " Cancelling note at position" + mNoteId);
 
             if (mIsNewNote) {
-                DataManager.getInstance().removeNote(mNoteId);
+                //Delete the note that was being created
+                deleteNoteFromDatabase();
             } else {
                 //When its not a new note handle discarding if there's new data entered when user hits cancel
                 storePreviousNoteValues();
@@ -139,6 +141,20 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
         }
         Log.d(TAG, "onPause");
 
+    }
+
+    private void deleteNoteFromDatabase() {
+      final  String selection=NoteInfoEntry._ID + " = ?";
+      final  String[] selectionArgs={Integer.toString(mNoteId)};
+        @SuppressLint("StaticFieldLeak") AsyncTask task=new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] objects) {
+                SQLiteDatabase db=mDbOpenhelper.getWritableDatabase();
+                db.delete(NoteInfoEntry.TABLE_NAME,selection,selectionArgs);
+                return null;
+            }
+        };
+        task.execute();
     }
 
     //TODO: Discard any changes made to the existing note if user is cancelling
@@ -159,9 +175,37 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
 
     //TODO:Save the note if it gets edited/a new note added
     private void saveNote() {
-        mNote.setCourse((CourseInfo) mSpinnerCourses.getSelectedItem());//Set spinner
-        mNote.setTitle(mTextNoteTitle.getText().toString());//Set the title to:
-        mNote.setText(mTextNoteText.getText().toString());//Set the text to:
+        //Update our DB
+        String courseId=selectedCourseId();
+        String noteTitle=mTextNoteTitle.getText().toString();//Set the title to:
+       String noteText=mTextNoteText.getText().toString();//Set the text to:
+        saveNoteToDatabase(courseId,noteTitle,noteText);
+    }
+
+    private String selectedCourseId() {
+        int selectedPosition=mSpinnerCourses.getSelectedItemPosition();
+        //Get ref to cursor associated to the spinner
+        Cursor cursor=mAdapterCourses.getCursor();
+        cursor.moveToPosition(selectedPosition);
+        int courseIdPos=cursor.getColumnIndex(CourseInfoEntry.COLUMN_COURSE_ID);
+        String courseId=cursor.getString(courseIdPos);
+        return  courseId;
+    }
+
+
+    private void saveNoteToDatabase(String courseId, String noteTitle, String noteText) {
+        //Identify the note to update using ID of note
+        String selection = NoteInfoEntry._ID + " = ?";
+        String[] selectionArgs = {Integer.toString(mNoteId)};
+//Identify the columns and their values
+        ContentValues values = new ContentValues();
+        values.put(NoteInfoEntry.COLUMN_COURSE_ID, courseId);
+        values.put(NoteInfoEntry.COLUMN_NOTE_TITLE, noteTitle);
+        values.put(NoteInfoEntry.COLUMN_NOTE_TEXT, noteText);
+
+        //Connect to database
+        SQLiteDatabase db = mDbOpenhelper.getWritableDatabase();
+        db.update(NoteInfoEntry.TABLE_NAME, values, selection, selectionArgs);
     }
 
     private void displayNote() {
@@ -214,8 +258,14 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
 
     //TODO: Handle the creation of a new note
     private void createNewNote() {
-        DataManager dm = DataManager.getInstance();
-        mNoteId = dm.createNewNote();
+       //Insert a new row into the database
+        ContentValues values = new ContentValues();
+        values.put(NoteInfoEntry.COLUMN_COURSE_ID, "");
+        values.put(NoteInfoEntry.COLUMN_NOTE_TITLE, "");
+        values.put(NoteInfoEntry.COLUMN_NOTE_TEXT, "");
+
+        SQLiteDatabase db = mDbOpenhelper.getWritableDatabase();
+        mNoteId = (int) db.insert(NoteInfoEntry.TABLE_NAME, null, values);
 //        mNote = dm.getNotes().get(mNotePosition);//Get the position off the new note in the array
     }
 
@@ -254,6 +304,7 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void moveNext() {
+
         saveNote();
 
         ++mNoteId;
@@ -301,7 +352,7 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
         //Load courses data
         return new CursorLoader(this) {
             @Override
-            protected Cursor onLoadInBackground() {
+            public Cursor onLoadInBackground() {
                 SQLiteDatabase db = mDbOpenhelper.getReadableDatabase();
                 String[] courseColumns = {
                         CourseInfoEntry.COLUMN_COURSE_TITLE,

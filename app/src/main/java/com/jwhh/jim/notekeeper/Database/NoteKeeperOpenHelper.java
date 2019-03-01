@@ -23,6 +23,9 @@ public class NoteKeeperOpenHelper extends SQLiteOpenHelper {
 //execute SQL statements to crete db tables
         sqLiteDatabase.execSQL(CourseInfoEntry.SQL_CREATE_TABLE);
         sqLiteDatabase.execSQL(NoteInfoEntry.SQL_CREATE_TABLE);
+        //Create index we need
+        sqLiteDatabase.execSQL(CourseInfoEntry.SQL_CREATE_INDEX1);
+        sqLiteDatabase.execSQL(NoteInfoEntry.SQL_CREATE_INDEX1);
 
         //Provide some initial data so the app doesn't appear blank
 //Use dataWorker to add some notes to the table
@@ -35,7 +38,13 @@ public class NoteKeeperOpenHelper extends SQLiteOpenHelper {
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newversion) {
+//Upgrade version to using index to query db
+        if(oldVersion<2){
+            sqLiteDatabase.execSQL(CourseInfoEntry.SQL_CREATE_INDEX1);
+            sqLiteDatabase.execSQL(NoteInfoEntry.SQL_CREATE_INDEX1);
+
+        }
 
     }
 }

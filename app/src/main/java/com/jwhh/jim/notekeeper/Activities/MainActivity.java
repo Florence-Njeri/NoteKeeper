@@ -33,6 +33,7 @@ import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
 import com.jwhh.jim.notekeeper.DataClasses.NoteInfo;
 import com.jwhh.jim.notekeeper.DataManager;
 import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract;
+import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract.CourseInfoEntry;
 import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract.NoteInfoEntry;
 import com.jwhh.jim.notekeeper.Database.NoteKeeperOpenHelper;
 import com.jwhh.jim.notekeeper.R;
@@ -232,10 +233,20 @@ public class MainActivity extends AppCompatActivity
                     SQLiteDatabase db = mNoteDbOpenHelper.getReadableDatabase();//Connect to db
                     final String[] noteColumns = {
                             NoteInfoEntry.COLUMN_NOTE_TITLE,
-                            NoteInfoEntry.COLUMN_COURSE_ID,
-                            NoteInfoEntry._ID};
-                    String noteOrderBy = NoteInfoEntry.COLUMN_COURSE_ID + "," + NoteInfoEntry.COLUMN_NOTE_TITLE;
-                    return db.query(NoteInfoEntry.TABLE_NAME, noteColumns,
+                            NoteInfoEntry.getQName(NoteInfoEntry._ID),
+                            CourseInfoEntry.COLUMN_COURSE_TITLE};
+                    String noteOrderBy = CourseInfoEntry.COLUMN_COURSE_TITLE+ "," + NoteInfoEntry.COLUMN_NOTE_TITLE;
+
+                   /*
+                   Join note and course table based on their ids being equivalent so as to extract the course title
+                   note_info JOIN course_info ON note_info.course_id==course_info.course_id
+                   cursor will return column values of both tables
+                    */
+                    String tablesWithJoin = NoteInfoEntry.TABLE_NAME + " JOIN " +
+                            CourseInfoEntry.TABLE_NAME + " ON " +
+                            NoteInfoEntry.getQName(NoteInfoEntry.COLUMN_COURSE_ID) + " = " +
+                            CourseInfoEntry.getQName(CourseInfoEntry.COLUMN_COURSE_ID);
+                    return db.query(tablesWithJoin, noteColumns,
                             null, null, null, null, noteOrderBy);
                 }
             };
