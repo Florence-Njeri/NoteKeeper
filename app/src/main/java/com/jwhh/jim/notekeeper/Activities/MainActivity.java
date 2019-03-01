@@ -22,8 +22,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
-import com.jwhh.jim.notekeeper.Activities.NoteActivity;
-import com.jwhh.jim.notekeeper.Activities.SettingsActivity;
 import com.jwhh.jim.notekeeper.Adapters.CourseRecyclerAdapter;
 import com.jwhh.jim.notekeeper.Adapters.NoteRecyclerAdapter;
 import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
@@ -41,7 +39,7 @@ public class MainActivity extends AppCompatActivity
     private LinearLayoutManager mNotesLayoutManager;
     private CourseRecyclerAdapter mCourseRecyclerAdapter;
     private GridLayoutManager mCoursesLayoutManager;
-    private NoteKeeperOpenHelper mNoteKeeperOpenHelper;
+    private NoteKeeperOpenHelper mNoteDbOpenHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +49,7 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         //Instantiate the open helper
-        mNoteKeeperOpenHelper=new NoteKeeperOpenHelper(this);
+        mNoteDbOpenHelper =new NoteKeeperOpenHelper(this);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -87,7 +85,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         //Close the helper when the activity is getting destroyed
-        mNoteKeeperOpenHelper.close();
+        mNoteDbOpenHelper.close();
         super.onDestroy();
     }
 
@@ -106,6 +104,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void initializeDisplayContent() {
+        //Display the notes from the database
+        DataManager.loadFromDatabase(mNoteDbOpenHelper);
         mRecyclerItems = (RecyclerView) findViewById(R.id.recycler_list_items);
         mNotesLayoutManager = new LinearLayoutManager(this);
         mCoursesLayoutManager = new GridLayoutManager(this,
@@ -125,7 +125,6 @@ public class MainActivity extends AppCompatActivity
         mRecyclerItems.setAdapter(mNoteRecyclerAdapter);
 
         //See if db exists and crete it if it doesnt
-        SQLiteDatabase db=mNoteKeeperOpenHelper.getReadableDatabase();
 
         selectNavigationMenuItem(R.id.nav_notes);
     }
