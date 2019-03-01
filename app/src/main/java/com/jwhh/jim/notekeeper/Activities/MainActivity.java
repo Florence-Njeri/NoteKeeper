@@ -3,6 +3,7 @@ package com.jwhh.jim.notekeeper.Activities;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -27,6 +28,8 @@ import com.jwhh.jim.notekeeper.Adapters.NoteRecyclerAdapter;
 import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
 import com.jwhh.jim.notekeeper.DataClasses.NoteInfo;
 import com.jwhh.jim.notekeeper.DataManager;
+import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract;
+import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract.NoteInfoEntry;
 import com.jwhh.jim.notekeeper.Database.NoteKeeperOpenHelper;
 import com.jwhh.jim.notekeeper.R;
 
@@ -74,20 +77,35 @@ public class MainActivity extends AppCompatActivity
 
         initializeDisplayContent();
     }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mNoteRecyclerAdapter.notifyDataSetChanged();
-        updateNavHeader();
-    }
-
     @Override
     protected void onDestroy() {
         //Close the helper when the activity is getting destroyed
         mNoteDbOpenHelper.close();
         super.onDestroy();
     }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //Get latest notes from the database
+        loadNotes();
+        updateNavHeader();
+    }
+
+    private void loadNotes() {
+        //Query db to get a list of notes
+        SQLiteDatabase db=mNoteDbOpenHelper.getReadableDatabase();//Connect to db
+        final String[] noteColumns = {
+                NoteInfoEntry.COLUMN_NOTE_TITLE,
+                NoteInfoEntry.COLUMN_COURSE_ID,
+                NoteInfoEntry._ID};
+        String noteOrderBy = NoteInfoEntry.COLUMN_COURSE_ID+ "," + NoteInfoEntry.COLUMN_NOTE_TITLE;
+        final Cursor noteCursor = db.query(NoteInfoEntry.TABLE_NAME, noteColumns,
+                null, null, null, null, noteOrderBy);
+        //Associate the cursor with the adapter
+        mNoteRecyclerAdapter.changeCursor(noteCursor);
+    }
+
+
 
     private void updateNavHeader() {
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
@@ -111,8 +129,8 @@ public class MainActivity extends AppCompatActivity
         mCoursesLayoutManager = new GridLayoutManager(this,
                 getResources().getInteger(R.integer.course_grid_span));
 
-        List<NoteInfo> notes = DataManager.getInstance().getNotes();
-        mNoteRecyclerAdapter = new NoteRecyclerAdapter(this, notes);
+        //Pass in the appropriate cursor to our adapter
+        mNoteRecyclerAdapter = new NoteRecyclerAdapter(this,null );
 
         List<CourseInfo> courses = DataManager.getInstance().getCourses();
         mCourseRecyclerAdapter = new CourseRecyclerAdapter(this, courses);

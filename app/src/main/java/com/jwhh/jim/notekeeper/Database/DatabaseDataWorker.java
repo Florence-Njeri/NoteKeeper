@@ -45,7 +45,7 @@ public class DatabaseDataWorker {
 
      private void insertNote(String courseId, String title, String text) {
         ContentValues values = new ContentValues();
-        values.put(NoteKeeperDatabaseContract.NoteInfoEntry.COLUMN_NOTE_ID, courseId);
+        values.put(NoteKeeperDatabaseContract.NoteInfoEntry.COLUMN_COURSE_ID, courseId);
         values.put(NoteKeeperDatabaseContract.NoteInfoEntry.COLUMN_NOTE_TITLE, title);
         values.put(NoteKeeperDatabaseContract.NoteInfoEntry.COLUMN_NOTE_TEXT, text);
 

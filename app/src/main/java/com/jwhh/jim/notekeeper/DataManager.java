@@ -46,8 +46,9 @@ public class DataManager {
         final String[] noteColumns = {
                 NoteInfoEntry.COLUMN_NOTE_TITLE,
                 NoteInfoEntry.COLUMN_NOTE_TEXT,
-                NoteInfoEntry.COLUMN_NOTE_ID};
-        String noteOrderBy = NoteInfoEntry.COLUMN_NOTE_ID + "," + NoteInfoEntry.COLUMN_NOTE_TITLE;
+                NoteInfoEntry.COLUMN_COURSE_ID,
+                NoteInfoEntry._ID};
+        String noteOrderBy = NoteInfoEntry.COLUMN_COURSE_ID + "," + NoteInfoEntry.COLUMN_NOTE_TITLE;
         final Cursor noteCursor = db.query(NoteInfoEntry.TABLE_NAME, noteColumns,
                 null, null, null, null, noteOrderBy);
         loadNotesFromDatabase(noteCursor);
@@ -56,7 +57,8 @@ public class DataManager {
     private static void loadNotesFromDatabase(Cursor noteCursor) {
         int noteTitlePos = noteCursor.getColumnIndex(NoteInfoEntry.COLUMN_NOTE_TITLE);
         int noteTextPos = noteCursor.getColumnIndex(NoteInfoEntry.COLUMN_NOTE_TEXT);
-        int courseIdPos = noteCursor.getColumnIndex(NoteInfoEntry.COLUMN_NOTE_ID);
+        int courseIdPos = noteCursor.getColumnIndex(NoteInfoEntry.COLUMN_COURSE_ID);
+        int idPos = noteCursor.getColumnIndex(NoteInfoEntry._ID);
 
         DataManager dm = getInstance();
         dm.mNotes.clear();
@@ -65,10 +67,11 @@ public class DataManager {
             String noteTitle = noteCursor.getString(noteTitlePos);
             String noteText = noteCursor.getString(noteTextPos);
             String courseId = noteCursor.getString(courseIdPos);
+            int id = Integer.parseInt(noteCursor.getString(idPos));
 
 //Get course that corresponds to the current row
             CourseInfo course = dm.getCourse(courseId);
-            NoteInfo note = new NoteInfo(course, noteTitle, noteText);
+            NoteInfo note = new NoteInfo(id,course, noteTitle, noteText);
             dm.mNotes.add(note);
         }
         noteCursor.close();
