@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -20,6 +21,8 @@ import android.widget.EditText;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 
+import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract;
+import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract.Courses;
 import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
 import com.jwhh.jim.notekeeper.DataClasses.NoteInfo;
 import com.jwhh.jim.notekeeper.DataManager;
@@ -27,6 +30,8 @@ import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract.CourseInfoEnt
 import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract.NoteInfoEntry;
 import com.jwhh.jim.notekeeper.Database.NoteKeeperOpenHelper;
 import com.jwhh.jim.notekeeper.R;
+
+import java.net.URI;
 
 public class NoteActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks <Cursor> {
     public static final String NOTE_ID = "com.jwhh.jim.notekeeper.NOTE_ID";
@@ -64,7 +69,7 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
         setSupportActionBar(toolbar);
         mDbOpenhelper = new NoteKeeperOpenHelper(this);
         mSpinnerCourses = (Spinner) findViewById(R.id.spinner_courses);
-//Populate with cursor based data from the database
+//Populate with cursor based data from the content provider
         mAdapterCourses = new SimpleCursorAdapter(this, android.R.layout.simple_spinner_item, null,
                 new String[]{CourseInfoEntry.COLUMN_COURSE_TITLE},
                 new int[]{android.R.id.text1}, 0);
@@ -349,24 +354,23 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
     @SuppressLint("StaticFieldLeak")
     private CursorLoader createLoaderCourses() {
         mCoursesQueryFinished = false;
-        //Load courses data
-        return new CursorLoader(this) {
-            @Override
-            public Cursor onLoadInBackground() {
-                SQLiteDatabase db = mDbOpenhelper.getReadableDatabase();
-                String[] courseColumns = {
-                        CourseInfoEntry.COLUMN_COURSE_TITLE,
-                        CourseInfoEntry.COLUMN_COURSE_ID,
-                        CourseInfoEntry._ID
-                };
+        //Uri to content provider
+        Uri uri= Courses.CONTENT_URI;
+        //Load courses title data for populating the spinner
 
-                return db.query(CourseInfoEntry.TABLE_NAME, courseColumns, null, null, null, null, CourseInfoEntry.COLUMN_COURSE_TITLE);
-            }
+        String[] courseColumns = {
+                Courses.COLUMN_COURSE_ID,
+                Courses.COLUMN_COURSE_TITLE,
+                Courses._ID
         };
+        //Find the cursor loader and perform query the results in curser will be received in loadFinished()
+        return new CursorLoader(this,uri,courseColumns,null,null,Courses.COLUMN_COURSE_TITLE);
+
     }
 
     @SuppressLint("StaticFieldLeak")
     private CursorLoader createLoaderNotes() {
+        //Access notes from the Content provider
         mNoteQueryFinished = false;
         //Load notes data using CursorLoader's loadInBackground interface
         return new CursorLoader(this) {
