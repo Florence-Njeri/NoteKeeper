@@ -16,6 +16,7 @@ import android.support.v4.app.NotificationCompat;
 import com.jwhh.jim.notekeeper.Activities.MainActivity;
 import com.jwhh.jim.notekeeper.Activities.NoteActivity;
 import com.jwhh.jim.notekeeper.R;
+import com.jwhh.jim.notekeeper.Service.NoteBackupService;
 
 /**
  * Helper class for showing and canceling note reminder
@@ -56,6 +57,9 @@ public class NoteReminderNotification {
 
         Intent noteActivityIntent = new Intent(context, NoteActivity.class);
         noteActivityIntent.putExtra(NoteActivity.NOTE_ID, noteId);
+
+        Intent backupServiceIntent=new Intent(context, NoteBackupService.class);
+        backupServiceIntent.putExtra(NoteActivity.NOTE_ID,noteId);
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
 
                 // Set appropriate defaults for the notification light, sound,
@@ -105,7 +109,8 @@ public class NoteReminderNotification {
                                 0,
                                 noteActivityIntent,
                                 PendingIntent.FLAG_UPDATE_CURRENT))
-//Additional actions
+
+              //Additional actions
                 .addAction(0,
                         "View all notes",
                         PendingIntent.getActivity(
@@ -114,6 +119,14 @@ public class NoteReminderNotification {
                                 new Intent(context, MainActivity.class),
                                 PendingIntent.FLAG_UPDATE_CURRENT
                         ))
+                //Pending intent to do backup
+                .addAction(0,
+                "Backup notes",
+                PendingIntent.getService(
+                        context,
+                        0,
+                        backupServiceIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT))
                 // Automatically dismiss the notification when it is touched.
                 .setAutoCancel(true);
 

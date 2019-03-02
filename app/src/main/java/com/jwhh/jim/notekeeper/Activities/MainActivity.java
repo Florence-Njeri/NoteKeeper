@@ -8,8 +8,9 @@ import android.content.Intent;
 import android.content.Loader;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -29,17 +30,14 @@ import android.widget.TextView;
 
 import com.jwhh.jim.notekeeper.Adapters.CourseRecyclerAdapter;
 import com.jwhh.jim.notekeeper.Adapters.NoteRecyclerAdapter;
-import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract;
 import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract.Courses;
 import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract.Notes;
 import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
-import com.jwhh.jim.notekeeper.DataClasses.NoteInfo;
 import com.jwhh.jim.notekeeper.DataManager;
-import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract;
-import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract.CourseInfoEntry;
-import com.jwhh.jim.notekeeper.Database.NoteKeeperDatabaseContract.NoteInfoEntry;
 import com.jwhh.jim.notekeeper.Database.NoteKeeperOpenHelper;
 import com.jwhh.jim.notekeeper.R;
+import com.jwhh.jim.notekeeper.Service.NoteBackup;
+import com.jwhh.jim.notekeeper.Service.NoteBackupService;
 
 import java.util.List;
 
@@ -100,6 +98,21 @@ public class MainActivity extends AppCompatActivity
         //Get latest notes<re-query>  from the database ie repeat query when returning to mainActivity
         getLoaderManager().restartLoader(LOADER_NOTES, null, this);
         updateNavHeader();
+
+        openDrawer();
+    }
+
+    private void openDrawer() {
+        //Delay opening the drawer by plcing it on the message queue
+        Handler handler=new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                DrawerLayout drawerLayout=(DrawerLayout) findViewById(R.id.drawer_layout);
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        },1000);
+
     }
 
     private void updateNavHeader() {
@@ -184,8 +197,18 @@ public class MainActivity extends AppCompatActivity
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
         }
+        else if (id == R.id.action_backup_notes) {
+           backupNotes();
+        }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void backupNotes() {
+        //Start service to perform background work
+        Intent intent=new Intent(this, NoteBackupService.class);
+        intent.putExtra(NoteBackupService.EXTRA_COURSE_ID,NoteBackup.ALL_COURSES);
+startService(intent);
     }
 
     @SuppressWarnings("StatementWithEmptyBody")

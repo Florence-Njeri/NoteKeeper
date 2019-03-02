@@ -13,15 +13,20 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.StrictMode;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 
+import com.jwhh.jim.notekeeper.BuildConfig;
 import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract.Courses;
 import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract.Notes;
 import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
@@ -68,6 +73,8 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
         setContentView(R.layout.activity_note);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        //StrictMode
+        enableStrictMode();
         mDbOpenhelper = new NoteKeeperOpenHelper(this);
         mSpinnerCourses = (Spinner) findViewById(R.id.spinner_courses);
 //Populate with cursor based data from the content provider
@@ -96,6 +103,17 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
 //            load note data on a background thread
             getLoaderManager().initLoader(LOADER_NOTES, null, this);
         Log.d(TAG, "onCreate");
+    }
+
+    private void enableStrictMode() {
+        //Only run when debugging or testing
+        if (BuildConfig.DEBUG) {
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build();
+            StrictMode.setThreadPolicy(policy);
+        }
     }
 
     @Override
@@ -200,18 +218,16 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     private void saveNoteToDatabase(String courseId, String noteTitle, String noteText) {
-        //Identify the note to update using ID of note
-        String selection = NoteInfoEntry._ID + " = ?";
-        String[] selectionArgs = {Integer.toString(mNoteId)};
+
 //Identify the columns and their values
         ContentValues values = new ContentValues();
-        values.put(NoteInfoEntry.COLUMN_COURSE_ID, courseId);
-        values.put(NoteInfoEntry.COLUMN_NOTE_TITLE, noteTitle);
-        values.put(NoteInfoEntry.COLUMN_NOTE_TEXT, noteText);
+        values.put(Notes.COLUMN_COURSE_ID, courseId);
+        values.put(Notes.COLUMN_NOTE_TITLE, noteTitle);
+        values.put(Notes.COLUMN_NOTE_TEXT, noteText);
+        //Connect to content provider and parse uri to the note
 
-        //Connect to database
-        SQLiteDatabase db = mDbOpenhelper.getWritableDatabase();
-        db.update(NoteInfoEntry.TABLE_NAME, values, selection, selectionArgs);
+        getContentResolver().update(mNoteUri, values, null, null);
+
     }
 
     private void displayNote() {
@@ -264,18 +280,66 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
 
     //TODO: Handle the creation of a new note
     private void createNewNote() {
+//   Background work to avoid ANR
+        @SuppressLint("StaticFieldLeak")
+        AsyncTask <ContentValues, Integer, Uri> task = new AsyncTask <ContentValues, Integer, Uri>() {
+
+            ProgressBar mProgressBar;
+
+            @Override
+            protected void onPreExecute() {
+                mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
+                mProgressBar.setVisibility(View.VISIBLE);
+                mProgressBar.setProgress(1);
+                super.onPreExecute();
+            }
+
+            @Override
+            protected Uri doInBackground(ContentValues... contentValues) {
+                ContentValues insertValues = contentValues[0];
+                //Perform insert using the content resolver which returns back a uri ie the ContentProvider's
+//   insert() receives the uri and ContentValues passed into this ContentResolver
+                Uri rowUri = getContentResolver().insert(Notes.CONTENT_URI, insertValues);//this insert() leads to insert() of C.P getting called
+              simulateLongRunningWork();
+               publishProgress(2);
+               simulateLongRunningWork();
+               publishProgress(3);
+                return rowUri;
+            }
+
+            @Override
+            protected void onProgressUpdate(Integer... values) {
+                int progressValue=0;
+                mProgressBar.setProgress(progressValue);
+            }
+
+            @Override
+            protected void onPostExecute(Uri uri) {
+                mNoteUri = uri;
+                displaySnackbar(mNoteUri.toString());
+                mProgressBar.setVisibility(View.GONE);
+            }
+        };
         //Insert a new row into the database
+
         ContentValues values = new ContentValues();
         values.put(Notes.COLUMN_COURSE_ID, "");
         values.put(Notes.COLUMN_NOTE_TITLE, "");
         values.put(Notes.COLUMN_NOTE_TEXT, "");
-//Perform insert using the content resolver which returns back a uri ie the ContentProvider's
-//        insert() receives the uri and ContentValues passed into this ContentResolver
-        mNoteUri = getContentResolver().insert(Notes.CONTENT_URI, values);//this insert() leads to insert() of C.P getting called
-
+//Instantiate background work
+        task.execute(values);
 
     }
+    private void displaySnackbar(String message) {
+        View view = findViewById(R.id.spinner_courses);
+        Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
+    }
 
+    private void simulateLongRunningWork() {
+        try {
+            Thread.sleep(2000);
+        } catch(Exception ex) {}
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -297,8 +361,7 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
         } else if (id == R.id.action_cancel) {
             mIsCancelling = true;
             finish();
-        }
-        else if (id == R.id.action_set_reminder) {
+        } else if (id == R.id.action_set_reminder) {
             showReminderNotification();
         }
 
@@ -307,10 +370,10 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void showReminderNotification() {
 //Instantiate a notification
-        String noteTitle=mTextNoteTitle.getText().toString();
-        String noteText=mTextNoteText.getText().toString();
-      int noteId=(int)  ContentUris.parseId(mNoteUri);
-        NoteReminderNotification.notify(this,noteText,noteTitle,noteId);
+        String noteTitle = mTextNoteTitle.getText().toString();
+        String noteText = mTextNoteText.getText().toString();
+        int noteId = (int) ContentUris.parseId(mNoteUri);
+        NoteReminderNotification.notify(this, noteText, noteTitle, noteId);
 
     }
 
@@ -388,14 +451,13 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
         mNoteQueryFinished = false;
         //Load notes data using CursorLoader's loadInBackground interface
 
-                String[] noteColumns = {
-                        Notes.COLUMN_COURSE_ID,
-                        Notes.COLUMN_NOTE_TITLE,
-                        Notes.COLUMN_NOTE_TEXT};
+        String[] noteColumns = {
+                Notes.COLUMN_COURSE_ID,
+                Notes.COLUMN_NOTE_TITLE,
+                Notes.COLUMN_NOTE_TEXT};
 //URI to query for the row Uri
-     mNoteUri=   ContentUris.withAppendedId(Notes.CONTENT_URI,mNoteId);
-        return new CursorLoader(this,mNoteUri,noteColumns,null,null,null);
-
+        mNoteUri = ContentUris.withAppendedId(Notes.CONTENT_URI, mNoteId);
+        return new CursorLoader(this, mNoteUri, noteColumns, null, null, null);
 
 
     }
