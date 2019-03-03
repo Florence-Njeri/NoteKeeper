@@ -2,7 +2,9 @@ package com.jwhh.jim.notekeeper.Activities;
 // TODO: Open the note from the list
 
 import android.annotation.SuppressLint;
+import android.app.AlarmManager;
 import android.app.LoaderManager;
+import android.app.PendingIntent;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.CursorLoader;
@@ -14,6 +16,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.os.SystemClock;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -26,6 +29,8 @@ import android.widget.ProgressBar;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 
+import com.jwhh.jim.notekeeper.BroadcastReceiver.CourseEventBroadcastReceiver;
+import com.jwhh.jim.notekeeper.BroadcastReceiver.NoteReminderReceiver;
 import com.jwhh.jim.notekeeper.BuildConfig;
 import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract.Courses;
 import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract.Notes;
@@ -242,6 +247,8 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
         mSpinnerCourses.setSelection(courseIndex);
         mTextNoteTitle.setText(noteTitle);
         mTextNoteText.setText(noteText);
+
+        CourseEventBroadcastReceiver.sendEventBroadcast(this,courseId,"Editing Note");
     }
 
     private int getIndexOfCourseId(String courseId) {
@@ -373,8 +380,19 @@ public class NoteActivity extends AppCompatActivity implements LoaderManager.Loa
         String noteTitle = mTextNoteTitle.getText().toString();
         String noteText = mTextNoteText.getText().toString();
         int noteId = (int) ContentUris.parseId(mNoteUri);
-        NoteReminderNotification.notify(this, noteText, noteTitle, noteId);
+        //Use Alarm Manager to fire after some time elapses
+        Intent intent=new Intent(this, NoteReminderReceiver.class);
+        intent.putExtra(NoteReminderReceiver.EXTRA_NOTE_TITLE,noteTitle);
+        intent.putExtra(NoteReminderReceiver.EXTRA_NOTE_TEXT,noteText);
+        intent.putExtra(NoteReminderReceiver.EXTRA_NOTE_ID,noteId);
+        PendingIntent pendingIntent=PendingIntent.getBroadcast(this,0,intent,PendingIntent.FLAG_UPDATE_CURRENT);
 
+        AlarmManager alarmManager= (AlarmManager) getSystemService(ALARM_SERVICE);
+
+      long currentTimeInMilliseconds=  SystemClock.elapsedRealtime();
+      long ONE_HOUR=  5*1000;//i hour in milliseconds
+      long alarmTime=currentTimeInMilliseconds+ONE_HOUR;//Fire notification after one hour
+        alarmManager.set(AlarmManager.ELAPSED_REALTIME,alarmTime,pendingIntent);
     }
 
     @Override

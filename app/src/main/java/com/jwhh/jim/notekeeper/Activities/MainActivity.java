@@ -2,16 +2,24 @@ package com.jwhh.jim.notekeeper.Activities;
 
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.LoaderManager;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
 import android.content.SharedPreferences;
+import android.content.pm.ComponentInfo;
 import android.database.Cursor;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PersistableBundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.GridLayoutManager;
@@ -35,6 +43,7 @@ import com.jwhh.jim.notekeeper.ContentProvider.NoteKeeperProviderContract.Notes;
 import com.jwhh.jim.notekeeper.DataClasses.CourseInfo;
 import com.jwhh.jim.notekeeper.DataManager;
 import com.jwhh.jim.notekeeper.Database.NoteKeeperOpenHelper;
+import com.jwhh.jim.notekeeper.JobSheduler.NoteUploaderJobService;
 import com.jwhh.jim.notekeeper.R;
 import com.jwhh.jim.notekeeper.Service.NoteBackup;
 import com.jwhh.jim.notekeeper.Service.NoteBackupService;
@@ -44,6 +53,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, LoaderManager.LoaderCallbacks <Cursor> {
     private static final int LOADER_NOTES = 2;
+    private static final int NOTE_UPLOADER_JOB_ID = 1;
     private NoteRecyclerAdapter mNoteRecyclerAdapter;
     private RecyclerView mRecyclerItems;
     private LinearLayoutManager mNotesLayoutManager;
@@ -104,14 +114,14 @@ public class MainActivity extends AppCompatActivity
 
     private void openDrawer() {
         //Delay opening the drawer by plcing it on the message queue
-        Handler handler=new Handler(Looper.getMainLooper());
+        Handler handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                DrawerLayout drawerLayout=(DrawerLayout) findViewById(R.id.drawer_layout);
+                DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
                 drawerLayout.openDrawer(GravityCompat.START);
             }
-        },1000);
+        }, 1000);
 
     }
 
@@ -185,6 +195,7 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -196,19 +207,49 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.action_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
-        }
-        else if (id == R.id.action_backup_notes) {
-           backupNotes();
+        } else if (id == R.id.action_backup_notes) {
+            backupNotes();
+        } else if (id == R.id.action_upload_notes) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                scheduleNoteUpload();
+            }
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * used to shedule
+     *
+     * @class ComponenName describes the component that will handle the job
+     */
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private void scheduleNoteUpload() {
+        //Pass uri to do upload on<table or row> as bundle to our JobService
+        PersistableBundle extras = new PersistableBundle();
+        //Pass in the uri to the Notes table
+        extras.putString(NoteUploaderJobService.EXTRA_DATA_URI, Notes.CONTENT_URI.toString());
+
+        ComponentName componentInfo = new ComponentName(this, NoteUploaderJobService.class);
+
+        JobInfo jobInfo = new JobInfo.Builder(NOTE_UPLOADER_JOB_ID, componentInfo)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                .setExtras(extras)
+                .build();
+//Schedule the job
+        JobScheduler jobScheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+        assert jobScheduler != null;
+        jobScheduler.schedule(jobInfo);
+
+
+    }
+
     private void backupNotes() {
         //Start service to perform background work
-        Intent intent=new Intent(this, NoteBackupService.class);
-        intent.putExtra(NoteBackupService.EXTRA_COURSE_ID,NoteBackup.ALL_COURSES);
-startService(intent);
+        Intent intent = new Intent(this, NoteBackupService.class);
+        intent.putExtra(NoteBackupService.EXTRA_COURSE_ID, NoteBackup.ALL_COURSES);
+        startService(intent);
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
@@ -256,7 +297,7 @@ startService(intent);
             final String[] noteColumns = {
                     Notes.COLUMN_NOTE_TITLE,
                     Notes._ID,
-                  Courses.COLUMN_COURSE_TITLE};
+                    Courses.COLUMN_COURSE_TITLE};
             String noteOrderBy = Notes.COLUMN_COURSE_TITLE + "," + Notes.COLUMN_NOTE_TITLE;
 
             loader = new CursorLoader(this, Notes.CONTENT_EXPANDED_URI, noteColumns, null, null, noteOrderBy);
