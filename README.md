@@ -12,7 +12,4 @@
 <li>Notifications</li>
 <li>Threads in Android,Services ,Intent Services,Job Sheduler,Broadcast Receivers,Alarms</li>
 </ul>
-<img src="">
-
-
-
+![alt text](/app/src/main/res/drawable-xhdpi/DrawerLayout.png "Description goes here")
